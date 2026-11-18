@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Hungry Phonics Monster! 自然拼读小怪兽</title>
+  <style>
+    :root {
+      --bg-color: #F0F9FF;
+      --monster-primary: #10B981;
+      --monster-dark: #059669;
+      --card-bg: #FFFFFF;
+      --accent: #F59E0B;
+      --shadow: rgba(0, 0, 0, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Comic Sans MS', 'Chalkboard SE', 'PingFang SC', sans-serif;
+      background: linear-gradient(180deg, #E0F2FE 0%, #BAE6FD 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow-x: hidden;
+      padding: 12px;
+    }
+
+    header {
+      width: 100%;
+      max-width: 650px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 16px;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(8px);
+      border-radius: 20px;
+      box-shadow: 0 4px 15px var(--shadow);
+    }
+
+    .unit-selector {
+      font-size: 15px;
+      font-weight: bold;
+      color: #0369A1;
+      border: 2px solid #38BDF8;
+      border-radius: 12px;
+      padding: 5px 10px;
+      outline: none;
+      background: #FFF;
+      cursor: pointer;
+    }
+
+    .score-stars {
+      font-size: 20px;
+      color: #F59E0B;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    main {
+      width: 100%;
+      max-width: 650px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex-grow: 1;
+      justify-content: center;
+      position: relative;
+    }
+
+    .speaker-btn {
+      background: #FFEDD5;
+      border: 3px solid #FB923C;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 30px;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(251, 146, 60, 0.3);
+      transition: transform 0.15s, background-color 0.15s;
+      margin-bottom: 6px;
+    }
+    .speaker-btn:hover { transform: scale(1.08); background: #FED7AA; }
+    .speaker-btn:active { transform: scale(0.95); }
+    .speaker-btn.wobble {
+      animation: wobble 0.5s ease-in-out;
+    }
+
+    .hint-bubble {
+      font-size: 15px;
+      font-weight: bold;
+      color: #475569;
+      background: white;
+      padding: 5px 14px;
+      border-radius: 16px;
+      box-shadow: 0 3px 8px var(--shadow);
+      margin-bottom: 6px;
+    }
+
+    .monster-stage {
+      position: relative;
+      width: 210px;
+      height: 180px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .monster-svg {
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 10px 15px rgba(0,0,0,0.15));
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .chewing {
+      animation: chew 0.45s infinite;
+    }
+    .reject {
+      animation: rejectShake 0.5s ease-in-out;
+    }
+    .happy {
+      animation: jumpHappy 0.6s ease-in-out;
+    }
+
+    .slots-container {
+      display: flex;
+      gap: 10px;
+      margin: 12px 0 18px 0;
+      min-height: 60px;
+    }
+
+    .slot {
+      min-width: 58px;
+      height: 60px;
+      padding: 0 6px;
+      border: 3px dashed #94A3B8;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      font-weight: 900;
+      color: #0F172A;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+      transition: all 0.25s;
+    }
+
+    .slot.active {
+      border-color: #0284C7;
+      background: #E0F2FE;
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.5);
+      animation: pulseBorder 1.4s infinite;
+    }
+
+    .slot.filled {
+      border-style: solid;
+      border-color: #10B981;
+      background: #D1FAE5;
+      color: #065F46;
+      animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .biscuit-tray {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+      width: 100%;
+      max-width: 500px;
+      padding: 6px;
+    }
+
+    .biscuit {
+      min-width: 62px;
+      height: 62px;
+      padding: 0 10px;
+      background: linear-gradient(145deg, #FEF08A, #FBBF24);
+      border: 3px solid #D97706;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      font-weight: 900;
+      color: #78350F;
+      cursor: pointer;
+      box-shadow: 0 5px 0 #B45309, 0 8px 10px rgba(0,0,0,0.15);
+      transition: transform 0.12s, box-shadow 0.12s, opacity 0.2s;
+    }
+
+    .biscuit:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 9px 0 #B45309, 0 12px 14px rgba(0,0,0,0.2);
+    }
+
+    .biscuit:active {
+      transform: translateY(2px);
+      box-shadow: 0 3px 0 #B45309, 0 4px 6px rgba(0,0,0,0.2);
+    }
+
+    .biscuit.wrong-shake {
+      animation: shake 0.45s ease-in-out;
+      background: linear-gradient(145deg, #FECACA, #F87171);
+      border-color: #DC2626;
+      color: #7F1D1D;
+      box-shadow: 0 5px 0 #991B1B;
+    }
+
+    .overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    .celebration-card {
+      background: white;
+      border-radius: 26px;
+      padding: 28px;
+      width: 90%;
+      max-width: 360px;
+      text-align: center;
+      box-shadow: 0 20px 30px rgba(0,0,0,0.3);
+      animation: cardPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .celebration-card .word-img {
+      font-size: 70px;
+      margin: 8px 0;
+    }
+
+    .celebration-card .spelled-word {
+      font-size: 36px;
+      font-weight: 900;
+      color: #059669;
+      letter-spacing: 1px;
+    }
+
+    .celebration-card .word-chinese {
+      font-size: 19px;
+      color: #64748B;
+      margin-bottom: 18px;
+      font-weight: bold;
+    }
+
+    .celebration-card .next-btn {
+      background: #10B981;
+      border: none;
+      color: white;
+      padding: 12px 28px;
+      font-size: 19px;
+      font-weight: bold;
+      border-radius: 16px;
+      box-shadow: 0 5px 0 #059669;
+      cursor: pointer;
+    }
+    .celebration-card .next-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 3px 0 #059669;
+    }
+
+    #confettiCanvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      pointer-events: none;
+      z-index: 110;
+    }
+
+    @keyframes chew {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.04, 0.93); }
+    }
+    @keyframes rejectShake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-12px) rotate(-4deg); }
+      40%, 80% { transform: translateX(12px) rotate(4deg); }
+    }
+    @keyframes jumpHappy {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-22px) scale(1.03); }
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-7px); }
+      75% { transform: translateX(7px); }
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.6); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes pulseBorder {
+      0%, 100% { border-color: #38BDF8; }
+      50% { border-color: #0369A1; }
+    }
+    @keyframes wobble {
+      0%, 100% { transform: rotate(0); }
+      25% { transform: rotate(-12deg) scale(1.08); }
+      75% { transform: rotate(12deg) scale(1.08); }
+    }
+    @keyframes cardPop {
+      0% { transform: scale(0.6); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <select id="unitSelect" class="unit-selector">
+      <option value="all">🌟 全部单元 (45个单词)</option>
+      <option value="A">长元音 A: cake, rain, play 等</option>
+      <option value="E">长元音 E: tree, feet, bean 等</option>
+      <option value="I">长元音 I: kite, light, pie 等</option>
+      <option value="O">长元音 O: rope, coat, soap, doe 等</option>
+      <option value="U">长元音 U: cube, juice, blue, moon 等</option>
+    </select>
+    <div class="score-stars">
+      <span>⭐</span><span id="starCount">0</span>
+    </div>
+  </header>
+
+  <main>
+    <div id="hintBubble" class="hint-bubble">点击小喇叭听发音 👂</div>
+    
+    <div id="speakerBtn" class="speaker-btn" title="重听单词发音">
+      🔊
+    </div>
+
+    <!-- 小怪兽 SVG -->
+    <div class="monster-stage">
+      <svg id="monsterSvg" class="monster-svg" viewBox="0 0 200 180">
+        <path d="M 30,130 C 20,50 60,20 100,20 C 140,20 180,50 170,130 C 165,165 35,165 30,130 Z" fill="#10B981" />
+        <ellipse cx="100" cy="125" rx="50" ry="26" fill="#34D399" opacity="0.6"/>
+        <circle cx="65" cy="18" r="8" fill="#F59E0B"/>
+        <line x1="75" y1="30" x2="65" y2="18" stroke="#059669" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="135" cy="18" r="8" fill="#F59E0B"/>
+        <line x1="125" y1="30" x2="135" y2="18" stroke="#059669" stroke-width="4" stroke-linecap="round"/>
+        
+        <circle cx="75" cy="70" r="18" fill="#FFFFFF"/>
+        <circle id="pupilL" cx="77" cy="70" r="7" fill="#1E293B"/>
+        <circle cx="74" cy="67" r="2.5" fill="#FFFFFF"/>
+
+        <circle cx="125" cy="70" r="18" fill="#FFFFFF"/>
+        <circle id="pupilR" cx="123" cy="70" r="7" fill="#1E293B"/>
+        <circle cx="122" cy="67" r="2.5" fill="#FFFFFF"/>
+
+        <ellipse cx="50" cy="95" rx="8" ry="4" fill="#F43F5E" opacity="0.4"/>
+        <ellipse cx="150" cy="95" rx="8" ry="4" fill="#F43F5E" opacity="0.4"/>
+
+        <path id="mouthDefault" d="M 85,96 Q 100,110 115,96" stroke="#065F46" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <path id="mouthOpen" d="M 75,94 Q 100,135 125,94 Z" fill="#881337" style="display:none;"/>
+        <path id="teeth" d="M 83,94 L 88,100 L 93,94 L 107,94 L 112,100 L 117,94" fill="#FFFFFF" style="display:none;"/>
+      </svg>
+    </div>
+
+    <!-- 待填字母卡槽 -->
+    <div id="slotsContainer" class="slots-container"></div>
+
+    <!-- 字母饼干候选池 -->
+    <div id="biscuitTray" class="biscuit-tray"></div>
+  </main>
+
+  <div id="victoryOverlay" class="overlay">
+    <div class="celebration-card">
+      <div id="victoryEmoji" class="word-img">🌧️</div>
+      <div id="victoryWord" class="spelled-word">rain</div>
+      <div id="victoryChinese" class="word-chinese">雨，下雨</div>
+      <button id="nextBtn" class="next-btn">下一关 ➔</button>
+    </div>
+  </div>
+
+  <canvas id="confettiCanvas"></canvas>
+
+  <script>
+    /* ================= 45个标准词库 ================= */
+    const WORD_DATABASE = [
+      // 一、长元音 A /eɪ/
+      { word: "cake", group: "A", chunks: ["c", "a", "k", "e"], distractors: ["o", "p"], emoji: "🎂", cn: "蛋糕" },
+      { word: "face", group: "A", chunks: ["f", "a", "c", "e"], distractors: ["s", "k"], emoji: "😀", cn: "脸" },
+      { word: "game", group: "A", chunks: ["g", "a", "m", "e"], distractors: ["d", "n"], emoji: "🎮", cn: "游戏" },
+      { word: "braid", group: "A", chunks: ["br", "ai", "d"], distractors: ["ee", "ow"], emoji: "👧", cn: "发辫" },
+      { word: "pail", group: "A", chunks: ["p", "ai", "l"], distractors: ["ui", "oa"], emoji: "🪣", cn: "水桶" },
+      { word: "rain", group: "A", chunks: ["r", "ai", "n"], distractors: ["ea", "oe"], emoji: "🌧️", cn: "下雨" },
+      { word: "play", group: "A", chunks: ["pl", "ay"], distractors: ["ee", "igh"], emoji: "🤾", cn: "玩耍" },
+      { word: "hay", group: "A", chunks: ["h", "ay"], distractors: ["ow", "ue"], emoji: "🌾", cn: "干草" },
+      { word: "stay", group: "A", chunks: ["st", "ay"], distractors: ["oo", "ui"], emoji: "🐕", cn: "停留，呆着" },
+
+      // 二、长元音 E /iː/
+      { word: "tree", group: "E", chunks: ["tr", "ee"], distractors: ["ai", "oo"], emoji: "🌳", cn: "大树" },
+      { word: "feet", group: "E", chunks: ["f", "ee", "t"], distractors: ["oa", "ew"], emoji: "👣", cn: "脚(双脚)" },
+      { word: "sheep", group: "E", chunks: ["sh", "ee", "p"], distractors: ["ay", "oe"], emoji: "🐑", cn: "绵羊" },
+      { word: "bean", group: "E", chunks: ["b", "ea", "n"], distractors: ["ai", "ui"], emoji: "🫘", cn: "豆子" },
+      { word: "leaf", group: "E", chunks: ["l", "ea", "f"], distractors: ["ow", "ee"], emoji: "🍃", cn: "树叶" },
+      { word: "peach", group: "E", chunks: ["p", "ea", "ch"], distractors: ["oo", "igh"], emoji: "🍑", cn: "桃子" },
+
+      // 三、长元音 I /aɪ/
+      { word: "hive", group: "I", chunks: ["h", "i", "v", "e"], distractors: ["a", "t"], emoji: "🐝", cn: "蜂巢" },
+      { word: "nine", group: "I", chunks: ["n", "i", "n", "e"], distractors: ["m", "d"], emoji: "9️⃣", cn: "数字九" },
+      { word: "kite", group: "I", chunks: ["k", "i", "t", "e"], distractors: ["b", "p"], emoji: "🪁", cn: "风筝" },
+      { word: "light", group: "I", chunks: ["l", "igh", "t"], distractors: ["ee", "oa"], emoji: "💡", cn: "电灯，光" },
+      { word: "knight", group: "I", chunks: ["kn", "igh", "t"], distractors: ["ay", "ui"], emoji: "🛡️", cn: "骑士" },
+      { word: "sight", group: "I", chunks: ["s", "igh", "t"], distractors: ["ea", "ue"], emoji: "👀", cn: "视力，景象" },
+      { word: "pie", group: "I", chunks: ["p", "ie"], distractors: ["ee", "ow"], emoji: "🥧", cn: "派，馅饼" },
+      { word: "tie", group: "I", chunks: ["t", "ie"], distractors: ["ai", "oo"], emoji: "👔", cn: "领带" },
+      { word: "die", group: "I", chunks: ["d", "ie"], distractors: ["ay", "oa"], emoji: "🎲", cn: "骰子" },
+
+      // 四、长元音 O /əʊ/
+      { word: "bone", group: "O", chunks: ["b", "o", "n", "e"], distractors: ["a", "d"], emoji: "🦴", cn: "骨头" },
+      { word: "rope", group: "O", chunks: ["r", "o", "p", "e"], distractors: ["t", "m"], emoji: "🪢", cn: "绳子" },
+      { word: "hose", group: "O", chunks: ["h", "o", "s", "e"], distractors: ["u", "p"], emoji: "🚿", cn: "水管" },
+      { word: "coat", group: "O", chunks: ["c", "oa", "t"], distractors: ["ee", "ui"], emoji: "🧥", cn: "外套大衣" },
+      { word: "loaf", group: "O", chunks: ["l", "oa", "f"], distractors: ["ea", "ew"], emoji: "🍞", cn: "一条面包" },
+      { word: "soap", group: "O", chunks: ["s", "oa", "p"], distractors: ["ai", "ie"], emoji: "🧼", cn: "肥皂" },
+      { word: "hoe", group: "O", chunks: ["h", "oe"], distractors: ["ee", "igh"], emoji: "⛏️", cn: "锄头" },
+      { word: "toe", group: "O", chunks: ["t", "oe"], distractors: ["ea", "oo"], emoji: "🦶", cn: "脚趾" },
+      { word: "doe", group: "O", chunks: ["d", "oe"], distractors: ["ay", "ui"], emoji: "🦌", cn: "母鹿" },
+      { word: "row", group: "O", chunks: ["r", "ow"], distractors: ["ee", "ay"], emoji: "🚣", cn: "划船" },
+      { word: "know", group: "O", chunks: ["kn", "ow"], distractors: ["ai", "oe"], emoji: "🧠", cn: "知道，明白" },
+      { word: "mow", group: "O", chunks: ["m", "ow"], distractors: ["ea", "oa"], emoji: "🚜", cn: "割草" },
+
+      // 五、长元音 U /juː/ ~ /uː/
+      { word: "cube", group: "U", chunks: ["c", "u", "b", "e"], distractors: ["o", "p"], emoji: "🧊", cn: "立方体，冰块" },
+      { word: "mute", group: "U", chunks: ["m", "u", "t", "e"], distractors: ["a", "k"], emoji: "🔇", cn: "静音" },
+      { word: "tube", group: "U", chunks: ["t", "u", "b", "e"], distractors: ["i", "d"], emoji: "🧪", cn: "管子，试管" },
+      { word: "juice", group: "U", chunks: ["j", "ui", "c", "e"], distractors: ["ee", "k"], emoji: "🧃", cn: "果汁" },
+      { word: "suit", group: "U", chunks: ["s", "ui", "t"], distractors: ["ea", "ow"], emoji: "🤵", cn: "西装" },
+      { word: "fruit", group: "U", chunks: ["fr", "ui", "t"], distractors: ["ai", "oe"], emoji: "🍎", cn: "水果" },
+      { word: "glue", group: "U", chunks: ["gl", "ue"], distractors: ["ee", "oa"], emoji: "🧴", cn: "胶水" },
+      { word: "blue", group: "U", chunks: ["bl", "ue"], distractors: ["ay", "ie"], emoji: "🟦", cn: "蓝色" },
+      { word: "clue", group: "U", chunks: ["cl", "ue"], distractors: ["ea", "igh"], emoji: "🔍", cn: "线索" },
+      { word: "chew", group: "U", chunks: ["ch", "ew"], distractors: ["ai", "oo"], emoji: "🍬", cn: "咀嚼，咬" },
+      { word: "drew", group: "U", chunks: ["dr", "ew"], distractors: ["ee", "ay"], emoji: "🎨", cn: "画画(过去式)" },
+      { word: "flew", group: "U", chunks: ["fl", "ew"], distractors: ["oa", "ui"], emoji: "🕊️", cn: "飞翔(过去式)" },
+      { word: "moon", group: "U", chunks: ["m", "oo", "n"], distractors: ["ee", "ai"], emoji: "🌙", cn: "月亮" },
+      { word: "scoop", group: "U", chunks: ["sc", "oo", "p"], distractors: ["ea", "ui"], emoji: "🍨", cn: "勺子，冰淇淋球" },
+      { word: "tooth", group: "U", chunks: ["t", "oo", "th"], distractors: ["ay", "oa"], emoji: "🦷", cn: "牙齿" }
+    ];
+
+    /* ================= 音效合成器 (Web Audio API) ================= */
+    class SoundFX {
+      constructor() {
+        this.ctx = null;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+      playChomp() {
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(140, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.7, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.12);
+      }
+      playBoing() {
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(120, this.ctx.currentTime + 0.28);
+        gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.28);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.28);
+      }
+      playVictory() {
+        this.init();
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.08);
+          gain.gain.setValueAtTime(0.4, this.ctx.currentTime + idx * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.08 + 0.4);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(this.ctx.currentTime + idx * 0.08);
+          osc.stop(this.ctx.currentTime + idx * 0.08 + 0.45);
+        });
+      }
+    }
+    const sfx = new SoundFX();
+
+    /* ================= 纯正独立语音管理器 (全面解决叠音/串音) ================= */
+    class SpeechEngine {
+      static isSpeaking = false;
+
+      // 彻底停止所有正在进行的声音，排空队列
+      static stopAll() {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+        }
+        this.isSpeaking = false;
+      }
+
+      // 播放单个单词：纯正美音，确保每次只朗读当前单词本身
+      static playWord(word, onEndCallback = null) {
+        if (!('speechSynthesis' in window)) return;
+        
+        // 关键防护 1：播放前强制杀死上一段语音
+        this.stopAll();
+
+        const utter = new SpeechSynthesisUtterance(word.toLowerCase());
+        utter.lang = 'en-US';
+        utter.rate = 0.88; // 适中小学生听力的语速
+        utter.pitch = 1.05;
+
+        // 挑选纯正英文语音包（若可用）
+        const voices = window.speechSynthesis.getVoices();
+        const usVoice = voices.find(v => v.lang === 'en-US' || v.lang.startsWith('en'));
+        if (usVoice) utter.voice = usVoice;
+
+        utter.onstart = () => {
+          this.isSpeaking = true;
+        };
+
+        utter.onend = () => {
+          this.isSpeaking = false;
+          if (onEndCallback) onEndCallback();
+        };
+
+        utter.onerror = () => {
+          this.isSpeaking = false;
+        };
+
+        window.speechSynthesis.speak(utter);
+      }
+
+      // 点击字母/组合时，逐字清晰朗读字母名（例如 ay 读 "A, Y"）
+      static playLetterNames(chunk) {
+        if (!('speechSynthesis' in window)) return;
+        
+        this.stopAll();
+
+        const letterSpelling = chunk.split('').map(c => c.toUpperCase()).join(', ');
+        const utter = new SpeechSynthesisUtterance(letterSpelling);
+        utter.lang = 'en-US';
+        utter.rate = 0.82;
+        utter.pitch = 1.05;
+
+        const voices = window.speechSynthesis.getVoices();
+        const usVoice = voices.find(v => v.lang === 'en-US' || v.lang.startsWith('en'));
+        if (usVoice) utter.voice = usVoice;
+
+        window.speechSynthesis.speak(utter);
+      }
+    }
+
+    // 预热浏览器语音包
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+    }
+
+    /* ================= 游戏主体控制器 ================= */
+    class PhonicsGame {
+      constructor() {
+        this.currentWordList = [...WORD_DATABASE];
+        this.currentIndex = 0;
+        this.currentWordObj = null;
+        this.currentStep = 0;
+        this.stars = 0;
+        this.audioLock = false; // 防连击锁
+
+        // DOM 元素
+        this.slotsContainer = document.getElementById('slotsContainer');
+        this.biscuitTray = document.getElementById('biscuitTray');
+        this.speakerBtn = document.getElementById('speakerBtn');
+        this.unitSelect = document.getElementById('unitSelect');
+        this.starCount = document.getElementById('starCount');
+        this.monsterSvg = document.getElementById('monsterSvg');
+        this.mouthDefault = document.getElementById('mouthDefault');
+        this.mouthOpen = document.getElementById('mouthOpen');
+        this.teeth = document.getElementById('teeth');
+        this.hintBubble = document.getElementById('hintBubble');
+
+        // 弹窗
+        this.victoryOverlay = document.getElementById('victoryOverlay');
+        this.victoryEmoji = document.getElementById('victoryEmoji');
+        this.victoryWord = document.getElementById('victoryWord');
+        this.victoryChinese = document.getElementById('victoryChinese');
+        this.nextBtn = document.getElementById('nextBtn');
+
+        this.initEvents();
+        this.filterAndStart('all');
+      }
+
+      initEvents() {
+        // 喇叭按钮点击：每次点击必先停止前一个声音，单次专一播放
+        this.speakerBtn.addEventListener('click', () => {
+          this.triggerSpeakerWobble();
+          SpeechEngine.playWord(this.currentWordObj.word);
+        });
+
+        this.unitSelect.addEventListener('change', (e) => {
+          SpeechEngine.stopAll();
+          this.filterAndStart(e.target.value);
+        });
+
+        this.nextBtn.addEventListener('click', () => {
+          SpeechEngine.stopAll();
+          this.victoryOverlay.style.display = 'none';
+          this.nextLevel();
+        });
+
+        // 眼睛随动
+        window.addEventListener('mousemove', (e) => {
+          const pupilL = document.getElementById('pupilL');
+          const pupilR = document.getElementById('pupilR');
+          const rect = this.monsterSvg.getBoundingClientRect();
+          const centerX = rect.left + rect.width / 2;
+          const centerY = rect.top + rect.height / 2;
+          const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX);
+          const dist = 3.5;
+          pupilL.setAttribute('cx', 77 + Math.cos(angle) * dist);
+          pupilL.setAttribute('cy', 70 + Math.sin(angle) * dist);
+          pupilR.setAttribute('cx', 123 + Math.cos(angle) * dist);
+          pupilR.setAttribute('cy', 70 + Math.sin(angle) * dist);
+        });
+      }
+
+      filterAndStart(group) {
+        SpeechEngine.stopAll();
+        if (group === 'all') {
+          this.currentWordList = [...WORD_DATABASE].sort(() => Math.random() - 0.5);
+        } else {
+          this.currentWordList = WORD_DATABASE.filter(w => w.group === group).sort(() => Math.random() - 0.5);
+        }
+        this.currentIndex = 0;
+        this.loadWord();
+      }
+
+      loadWord() {
+        SpeechEngine.stopAll();
+        this.currentWordObj = this.currentWordList[this.currentIndex];
+        this.currentStep = 0;
+        this.renderSlots();
+        this.renderBiscuits();
+        
+        this.hintBubble.innerText = `小怪兽饿了！快听它想吃什么 👂`;
+        
+        // 稍作停顿后单发当前单词
+        setTimeout(() => {
+          this.triggerSpeakerWobble();
+          SpeechEngine.playWord(this.currentWordObj.word);
+        }, 300);
+      }
+
+      triggerSpeakerWobble() {
+        this.speakerBtn.classList.remove('wobble');
+        void this.speakerBtn.offsetWidth;
+        this.speakerBtn.classList.add('wobble');
+      }
+
+      renderSlots() {
+        this.slotsContainer.innerHTML = '';
+        this.currentWordObj.chunks.forEach((chunk, idx) => {
+          const slot = document.createElement('div');
+          slot.className = `slot ${idx === 0 ? 'active' : ''}`;
+          slot.dataset.index = idx;
+          slot.id = `slot-${idx}`;
+          slot.innerText = '';
+          this.slotsContainer.appendChild(slot);
+        });
+      }
+
+      renderBiscuits() {
+        this.biscuitTray.innerHTML = '';
+        const allOptions = [...this.currentWordObj.chunks, ...this.currentWordObj.distractors];
+        const shuffled = allOptions.sort(() => Math.random() - 0.5);
+
+        shuffled.forEach(chunkText => {
+          const biscuit = document.createElement('div');
+          biscuit.className = 'biscuit';
+          biscuit.innerText = chunkText;
+          biscuit.addEventListener('click', () => this.handleFeed(chunkText, biscuit));
+          this.biscuitTray.appendChild(biscuit);
+        });
+      }
+
+      handleFeed(chunkText, biscuitEl) {
+        // 点击饼干：排空任何未完成的声音，单独念字母名
+        SpeechEngine.playLetterNames(chunkText);
+
+        const targetChunk = this.currentWordObj.chunks[this.currentStep];
+
+        if (chunkText === targetChunk) {
+          this.onCorrectFeed(chunkText, biscuitEl);
+        } else {
+          this.onWrongFeed(biscuitEl);
+        }
+      }
+
+      onCorrectFeed(chunkText, biscuitEl) {
+        sfx.playChomp();
+        this.setMonsterMouth(true);
+
+        biscuitEl.style.transform = "scale(0.2)";
+        biscuitEl.style.opacity = "0";
+        setTimeout(() => biscuitEl.style.visibility = 'hidden', 200);
+
+        this.monsterSvg.classList.add('chewing');
+        setTimeout(() => {
+          this.monsterSvg.classList.remove('chewing');
+          this.setMonsterMouth(false);
+        }, 400);
+
+        const slot = document.getElementById(`slot-${this.currentStep}`);
+        slot.innerText = chunkText;
+        slot.classList.remove('active');
+        slot.classList.add('filled');
+
+        this.currentStep++;
+
+        if (this.currentStep >= this.currentWordObj.chunks.length) {
+          setTimeout(() => this.onWordCompleted(), 400);
+        } else {
+          const nextSlot = document.getElementById(`slot-${this.currentStep}`);
+          if (nextSlot) nextSlot.classList.add('active');
+        }
+      }
+
+      onWrongFeed(biscuitEl) {
+        sfx.playBoing();
+        biscuitEl.classList.add('wrong-shake');
+        setTimeout(() => biscuitEl.classList.remove('wrong-shake'), 450);
+
+        this.monsterSvg.classList.add('reject');
+        this.hintBubble.innerText = "哎呀，味道不对！再听一次 👂";
+        setTimeout(() => {
+          this.monsterSvg.classList.remove('reject');
+        }, 500);
+
+        // 报错后延迟 600ms 重新朗读当前词
+        setTimeout(() => {
+          SpeechEngine.playWord(this.currentWordObj.word);
+        }, 600);
+      }
+
+      onWordCompleted() {
+        sfx.playVictory();
+        this.stars += 1;
+        this.starCount.innerText = this.stars;
+
+        this.monsterSvg.classList.add('happy');
+        setTimeout(() => this.monsterSvg.classList.remove('happy'), 600);
+
+        confettiCannon();
+        
+        // 拼完仅单次朗读此单词
+        SpeechEngine.playWord(this.currentWordObj.word);
+
+        setTimeout(() => {
+          this.victoryEmoji.innerText = this.currentWordObj.emoji;
+          this.victoryWord.innerText = this.currentWordObj.word;
+          this.victoryChinese.innerText = this.currentWordObj.cn;
+          this.victoryOverlay.style.display = 'flex';
+        }, 700);
+      }
+
+      nextLevel() {
+        SpeechEngine.stopAll();
+        this.currentIndex++;
+        if (this.currentIndex >= this.currentWordList.length) {
+          this.currentWordList.sort(() => Math.random() - 0.5);
+          this.currentIndex = 0;
+        }
+        this.loadWord();
+      }
+
+      setMonsterMouth(isOpen) {
+        this.mouthDefault.style.display = isOpen ? 'none' : 'block';
+        this.mouthOpen.style.display = isOpen ? 'block' : 'none';
+        this.teeth.style.display = isOpen ? 'block' : 'none';
+      }
+    }
+
+    /* ================= 纸屑粒子动效 ================= */
+    const canvas = document.getElementById('confettiCanvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function confettiCannon() {
+      particles = [];
+      const colors = ['#EF4444', '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899'];
+      for (let i = 0; i < 70; i++) {
+        particles.push({
+          x: canvas.width / 2,
+          y: canvas.height / 2 + 50,
+          w: Math.random() * 9 + 4,
+          h: Math.random() * 6 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          vx: (Math.random() - 0.5) * 14,
+          vy: (Math.random() - 0.9) * 16,
+          rot: Math.random() * 360,
+          rotSpeed: (Math.random() - 0.5) * 8
+        });
+      }
+      renderConfetti();
+    }
+
+    function renderConfetti() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach((p, idx) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.4;
+        p.rot += p.rotSpeed;
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate((p.rot * Math.PI) / 180);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+
+        if (p.y > canvas.height) particles.splice(idx, 1);
+      });
+
+      if (particles.length > 0) {
+        requestAnimationFrame(renderConfetti);
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      new PhonicsGame();
+    });
+  </script>
+</body>
+</html>
